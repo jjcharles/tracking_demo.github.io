@@ -108,9 +108,9 @@
 
         // Copy the grayscale data into the byte array
         for (let i = 0; i < matData.length; i++) {
-            byteData[i * 4] = matData[i];
-            byteData[i * 4 + 1] = matData[i];
-            byteData[i * 4 + 2] = matData[i];
+            byteData[i * 4] = 255-matData[i];
+            byteData[i * 4 + 1] = 255-matData[i];
+            byteData[i * 4 + 2] = 255-matData[i];
             byteData[i * 4 + 3] = 255; // Set the alpha channel to 255 (fully opaque)
         }
 
