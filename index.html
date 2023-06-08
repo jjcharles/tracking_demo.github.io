@@ -4,7 +4,13 @@
   <title>Optical Flow with WebRTC and OpenCV.js</title>
 </head>
 <body>
-  <video id="video" width="640" height="480" autoplay></video>
+  <video autoplay muted hidden playsinline id="video"  style="
+		-webkit-transform: scaleX(-1);
+		transform: scaleX(-1);
+		width: auto;
+		height: auto;">
+	</video>
+
   <canvas id="canvas" width="640" height="480"></canvas>
   <script async src="https://docs.opencv.org/master/opencv.js" onload="main();" type="text/javascript"></script>
   <script>
