@@ -11,32 +11,82 @@
     // Variables
     let video, canvas, context, videoWidth, videoHeight, cap, prevFrame, grayPrev, gray, streaming;
 
+
+    async function setupCamera() {
+        // Find the video element on our HTML page
+        video = document.getElementById('video');
+        
+        // Request the front-facing camera of the device
+        const stream = await navigator.mediaDevices.getUserMedia({
+            'audio': false,
+            'video': {
+              facingMode: 'user',
+              height: {ideal:1920},
+              width: {ideal: 1920},
+            },
+          });
+        video.srcObject = stream;
+        
+        // Handle the video stream once it loads.
+        return new Promise((resolve) => {
+            video.onloadedmetadata = () => {
+                resolve(video);
+            };
+        });
+    }
+
     // Function called when OpenCV.js is ready
-    function onOpenCvReady() {
+    async function onOpenCvReady() {
       video = document.getElementById('video');
       canvas = document.getElementById('canvas');
       context = canvas.getContext('2d');
       streaming = true
 
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(function (stream) {
-          video.srcObject = stream;
-          video.play();
-          video.onloadedmetadata = function () {
-            videoWidth = video.videoWidth;
-            videoHeight = video.videoHeight;
-            canvas.width = videoWidth;
-            canvas.height = videoHeight;
-            cap = new cv.VideoCapture(video);
-            prevFrame = new cv.Mat(videoHeight, videoWidth, cv.CV_8UC4);
-            grayPrev = new cv.Mat();
-            gray = new cv.Mat();
-            requestAnimationFrame(processVideo);
-          };
-        })
-        .catch(function (error) {
-          console.error('Error accessing media devices.', error);
-        });
+      // Request the front-facing camera of the device
+      const stream = await navigator.mediaDevices.getUserMedia({
+            'audio': false,
+            'video': {
+              facingMode: 'user',
+              height: {ideal:1920},
+              width: {ideal: 1920},
+            },
+          });
+
+      video.srcObject = stream;
+      videoWidth = video.videoWidth;
+      videoHeight = video.videoHeight;
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
+      cap = new cv.VideoCapture(video);
+      prevFrame = new cv.Mat(videoHeight, videoWidth, cv.CV_8UC4);
+      grayPrev = new cv.Mat();
+      gray = new cv.Mat();
+
+      // Handle the video stream once it loads.
+      return new Promise((resolve) => {
+            video.onloadedmetadata = () => {
+                resolve(video);
+            };
+      });
+      // navigator.mediaDevices.getUserMedia({ video: true })
+      //   .then(function (stream) {
+      //     video.srcObject = stream;
+      //     video.play();
+      //     video.onloadedmetadata = function () {
+      //       videoWidth = video.videoWidth;
+      //       videoHeight = video.videoHeight;
+      //       canvas.width = videoWidth;
+      //       canvas.height = videoHeight;
+      //       cap = new cv.VideoCapture(video);
+      //       prevFrame = new cv.Mat(videoHeight, videoWidth, cv.CV_8UC4);
+      //       grayPrev = new cv.Mat();
+      //       gray = new cv.Mat();
+      //       requestAnimationFrame(processVideo);
+      //     };
+      //   })
+      //   .catch(function (error) {
+      //     console.error('Error accessing media devices.', error);
+      //   });
     }
 
     // Function to process video frames
@@ -109,7 +159,7 @@
         // Copy the grayscale data into the byte array
         for (let i = 0; i < matData.length; i++) {
             byteData[i * 4] = 255-matData[i];
-            byteData[i * 4 + 1] = 255-matData[i];
+            byteData[i * 4 + 1] = matData[i];
             byteData[i * 4 + 2] = 255-matData[i];
             byteData[i * 4 + 3] = 255; // Set the alpha channel to 255 (fully opaque)
         }
