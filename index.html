@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Optical Flow with WebRTC and OpenCV.js</title>
+</head>
+<body>
+  <video id="video" width="640" height="480" autoplay></video>
+  <canvas id="canvas" width="640" height="480"></canvas>
+  <script async src="https://docs.opencv.org/master/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+  <script>
+    // Variables
+    let video, canvas, context, videoWidth, videoHeight, cap, prevFrame, grayPrev, gray, streaming;
+
+    // Function called when OpenCV.js is ready
+    function onOpenCvReady() {
+      video = document.getElementById('video');
+      canvas = document.getElementById('canvas');
+      context = canvas.getContext('2d');
+      streaming = true
+
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function (stream) {
+          video.srcObject = stream;
+          video.play();
+          video.onloadedmetadata = function () {
+            videoWidth = video.videoWidth;
+            videoHeight = video.videoHeight;
+            canvas.width = videoWidth;
+            canvas.height = videoHeight;
+            cap = new cv.VideoCapture(video);
+            prevFrame = new cv.Mat(videoHeight, videoWidth, cv.CV_8UC4);
+            grayPrev = new cv.Mat();
+            gray = new cv.Mat();
+            requestAnimationFrame(processVideo);
+          };
+        })
+        .catch(function (error) {
+          console.error('Error accessing media devices.', error);
+        });
+    }
+
+    // Function to process video frames
+    function processVideo() {
+      try {
+        if (!streaming) {
+          // Clean up and stop processing if the video stream ends
+          cleanupAndStop();
+          return;
+        }
+
+        // Start processing the next frame
+        requestAnimationFrame(processVideo);
+
+        // Capture frame from video stream
+        cap.read(prevFrame);
+
+        // Convert frame to grayscale
+        cv.cvtColor(prevFrame, grayPrev, cv.COLOR_RGBA2GRAY);
+
+        // Capture the next frame
+        cap.read(prevFrame);
+
+        // Convert frame to grayscale
+        cv.cvtColor(prevFrame, gray, cv.COLOR_RGBA2GRAY);
+
+        // Create a Mat to store the optical flow
+        let flow = new cv.Mat();
+
+        // Calculate optical flow
+        // cv.calcOpticalFlowFarneback(
+        //   grayPrev,
+        //   gray,
+        //   flow,
+        //   0.5,
+        //   3,
+        //   15,
+        //   3,
+        //   5,
+        //   1.2,
+        //   0
+        // );
+
+        // Render the optical flow on the canvas
+        // drawOpticalFlow(flow);
+        showMatObject(gray)
+
+        // Clean up
+        flow.delete();
+        // grayPrev.delete();
+        // gray.delete();
+      } catch (err) {
+        console.error('Error processing video frame.', err);
+      }
+    }
+
+    // Function to display Mat on canvas
+    function showMatObject(grayscaleMat) {
+        // Determine the dimensions of the grayscale Mat
+        let width = grayscaleMat.cols;
+        let height = grayscaleMat.rows;
+
+        // Calculate the expected length of the byte data array
+        let expectedLength = 4 * width * height;
+
+        // Convert the grayscale Mat to a byte array
+        let matData = grayscaleMat.data;
+        let byteData = new Uint8ClampedArray(expectedLength);
+
+        // Copy the grayscale data into the byte array
+        for (let i = 0; i < matData.length; i++) {
+            byteData[i * 4] = matData[i];
+            byteData[i * 4 + 1] = matData[i];
+            byteData[i * 4 + 2] = matData[i];
+            byteData[i * 4 + 3] = 255; // Set the alpha channel to 255 (fully opaque)
+        }
+
+        // Create a new ImageData object using the byte array
+        let imageData = new ImageData(byteData, width, height);
+
+        context.putImageData(imageData, 0, 0);
+
+    }
+    // Function to draw optical flow on canvas
+    function drawOpticalFlow(flow) {
+      let data = new Uint8ClampedArray(videoWidth * videoHeight * 4);
+
+      for (let y = 0; y < videoHeight; y++) {
+        for (let x = 0; x < videoWidth; x++) {
+          let idx = (y * videoWidth + x) * 4;
+          let [vx, vy] = flow.data32F.slice(idx, idx + 2);
+          data[idx] = Math.abs(vx * 20); // Scale the flow values for visualization
+          data[idx + 1] = Math.abs(vy * 20);
+          data[idx + 2] = 0;
+          data[idx + 3] = 255;
+        }
+      }
+
+      let imgData = new ImageData(data, videoWidth, videoHeight);
+      context.putImageData(imgData, 0, 0);
+    }
+
+    // Function to clean up and stop video processing
+    function cleanupAndStop() {
+      cap.delete();
+      prevFrame.delete();
+      grayPrev.delete();
+      gray.delete();
+      cv.destroyAllWindows();
+      video.pause();
+      video.srcObject.getTracks()[0].stop();
+    }
+  </script>
+</body>
+</html>
